@@ -66,7 +66,6 @@ module.exports = {
   },
 
   listeners: function () {
-
     var self = this
 
     // Client app
