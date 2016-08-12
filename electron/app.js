@@ -14,6 +14,9 @@ if (client.shouldQuit && server.shouldQuit) {
   return;
 }
 
+// Run server
+server.run()
+
 // Listeners
 client.listeners()
 server.listeners()
