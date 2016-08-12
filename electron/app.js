@@ -9,7 +9,7 @@ server.init()
 // check
 client.check()
 server.check()
-if (client.shouldQuit && server.shouldQuit) {
+if (client.shouldQuit || server.shouldQuit) {
   client.app.quit();
   return;
 }
