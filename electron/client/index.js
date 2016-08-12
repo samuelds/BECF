@@ -1,66 +1,120 @@
-const electron = require('electron')
-const path = require('path')
+module.exports = {
+  electron: require('electron'),
+  path: require('path'),
 
-const ipc = electron.ipcMain
-const app = electron.app
-const Menu = electron.Menu
-const Tray = electron.Tray
-const BrowserWindow = electron.BrowserWindow
+  app: null,
+  menu: null,
+  Tray: null,
+  BrowserWindow: null,
 
-let mainWindow = null
-let appIcon = null
-let trayOn = false
-let willQuitApp = false;
+  mainWindow: null,
+  appIcon: null,
+  trayOn: false,
+  willQuitApp: false,
+  shouldQuit: false,
 
-function createWindow () {
-  mainWindow = new BrowserWindow({width: 800, height: 600})
+  hideWindow: function () {
+    this.mainWindow.hide()
+    this.trayOn = true
+  },
 
-  mainWindow.loadURL(`file://${__dirname}/views/index.html`)
+  showWindow: function () {
+    this.mainWindow.show()
+    this.trayOn = false
+  },
 
-  mainWindow.webContents.openDevTools()
-
-  mainWindow.on('close', function (event) {
-    if (willQuitApp === false) {
-      event.preventDefault()
-      mainWindow.hide()
-      trayOn = true
+  focusWindow: function () {
+    if (this.mainWindow.isMinimized()) {
+      this.mainWindow.restore()
     }
-  })
-}
-
-function createIcon () {
-  var iconName = 'ressources/icon.png'
-  var iconPath = path.join(__dirname, iconName)
-  appIcon = new Tray(iconPath)
-  const contextMenu = Menu.buildFromTemplate([{
-    label: 'Quit',
-    click: function () {
-      willQuitApp = true
-      app.quit()
+    if (this.trayOn) {
+      this.showWindow()
     }
-  }])
-  appIcon.setToolTip('Electron is runing')
-  appIcon.setContextMenu(contextMenu)
+    this.mainWindow.focus()
+  },
 
-  appIcon.on('click', function () {
-    if (trayOn) {
-      mainWindow.show()
-    }
-    mainWindow.focus()
-  })
-}
+  createWindow: function  () {
+    this.mainWindow = new this.BrowserWindow({width: 800, height: 600})
+    this.mainWindow.loadURL(`file://${__dirname}/views/index.html`)    //
+    this.mainWindow.webContents.openDevTools()
+  },
 
-app.on('ready', function() {
-  createWindow()
-  createIcon()
-})
+  createMenu: function () {
+    var self = this
+    const contextMenu = this.menu.buildFromTemplate([{
+      label: 'Quit',
+      click: function () {
+        self.willQuitApp = true
+        self.app.quit()
+      }
+    }])
+    this.appIcon.setContextMenu(contextMenu)
 
-app.on('before-quit', function () {
-  willQuitApp = true;
-});
+    this.appIcon.on('click', function () {
+      if (this.trayOn) {
+        self.mainWindow.show()
+      }
+      self.mainWindow.focus()
+    })
+  },
 
-app.on('activate', function () {
-  if (mainWindow === null) {
-    createWindow()
+  createIcon: function  () {
+    var iconName = 'ressources/icon.png'
+    var iconPath = this.path.join(__dirname, iconName)
+    this.appIcon = new this.Tray(iconPath)
+    this.appIcon.setToolTip('Electron is runing')
+  },
+
+  listeners: function () {
+
+    var self = this
+
+    // Client app
+    this.app.on('ready', function () {
+      self.createWindow()
+      self.mainWindow.on('close', function (event) {
+        if (self.willQuitApp === false) {
+          event.preventDefault()
+          self.hideWindow()
+        }
+      })
+
+      self.createIcon()
+      self.appIcon.on('click', function () {
+        if (self.trayOn) {
+          self.showWindow()
+        }
+        self.mainWindow.focus()
+      })
+
+      self.createMenu()
+    })
+
+    this.app.on('before-quit', function () {
+      self.willQuitApp = true;
+    });
+
+    this.app.on('activate', function () {
+      if (self.mainWindow === null) {
+        self.createWindow()
+      }
+    })
+
+  },
+
+  check: function () {
+    var self = this
+    this.shouldQuit = this.app.makeSingleInstance(function(commandLine, workingDirectory) {
+      if (self.mainWindow) {
+        self.focusWindow()
+      }
+    })
+  },
+
+  init: function () {
+    this.app = this.electron.app
+    this.menu = this.electron.Menu
+    this.Tray = this.electron.Tray
+    this.BrowserWindow = this.electron.BrowserWindow
   }
-})
+}
