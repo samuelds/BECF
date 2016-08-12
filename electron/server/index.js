@@ -1,27 +1,39 @@
-var express = require('express')
-var path = require('path')
-const notifier = require('node-notifier')
-var app = express()
-var server = require('http').createServer(app)
-var io = require('socket.io')(server)
-var port = process.env.PORT || 3333 || 3000;
+module.exports = {
+  express: require('express'),
+  path: require('path'),
+  portfinder: require('portfinder'),
+  http: require('http'),
+  socket: require('socket.io'),
 
-try {
+  app: null,
+  server: null,
+  io: null,
 
-  server.listen(port, function () {
-    console.log('[server] listening at port %d', port)
-  })
+  port: 46148,
+  shouldQuit: false,
 
-  io.on('connection', function (socket) {
+  run: function () {
+    this.server = this.http.createServer(this.app)
+    this.io = this.socket(this.server)
+  },
 
-    console.log(socket.handshake.headers);
+  listeners: function () {
+    var self = this
+    this.server.listen(this.port, function () {
+      console.log('[Server] listening at port %d', self.port)
+    })
+  },
 
-    notifier.notify({
-      'title': 'BECF',
-      'message': 'Client connection'
-    });
-  })
+  check: function () {
+    var self = this
+    this.portfinder.getPort(function (err, port) {
+      if (port !== self.port) self.shouldQuit = true
+    })
+  },
 
-} catch (e) {
-  console.error(e)
+  init: function () {
+    this.app = this.express()
+    this.portfinder.basePort = this.port
+  }
+
 }
